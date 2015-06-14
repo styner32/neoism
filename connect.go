@@ -7,6 +7,8 @@
 package neoism
 
 import (
+	"encoding/base64"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,9 +21,38 @@ import (
 func Connect(uri string) (*Database, error) {
 	h := http.Header{}
 	h.Add("User-Agent", "neoism")
+
+	db, err := connectWithHeader(uri, &h)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
+// Connection with basic authentication token
+func ConnectWithBasicAuth(uri string, username string, password string) (*Database, error) {
+	h := http.Header{}
+	h.Add("User-Agent", "neoism")
+	h.Add("Authorization", fmt.Sprintf("Basic %s", getBasicAuthToken(username, password)))
+
+	db, err := connectWithHeader(uri, &h)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
+// Set basic authentication token
+func getBasicAuthToken(username string, password string) string {
+	data := []byte(fmt.Sprintf("%s:%s", username, password))
+	return base64.StdEncoding.EncodeToString(data)
+}
+
+// connect to the server
+func connectWithHeader(uri string, h *http.Header) (*Database, error) {
 	db := &Database{
 		Session: &napping.Session{
-			Header: &h,
+			Header: h,
 		},
 	}
 
